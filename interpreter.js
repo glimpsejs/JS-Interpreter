@@ -31,13 +31,18 @@
  *     global scope object.
  * @constructor
  */
+//var acorn = require('./acorn.js');
+//var escodegen = require('escodegen');
 var Interpreter = function(code, opt_initFunc) {
   this.initFunc_ = opt_initFunc;
   this.UNDEFINED = this.createPrimitive(undefined);
   this.ast = acorn.parse(code);
   this.paused_ = false;
-  var scope = this.createScope(this.ast, null);
+  this.scopeOrder = 0;
+  var scope = this.createScope(this.ast, null, "#Global#");
   this.stateStack = [{node: this.ast, scope: scope, thisExpression: scope}];
+  this.history = [];
+  this.seek = 0;
 };
 
 /**
@@ -51,7 +56,7 @@ Interpreter.prototype.step = function() {
     return true;
   }
   var state = this.stateStack[0];
-  this['step' + state.node.type]();
+  this['step' + state.node.type](); //Executing node types here
   return true;
 };
 
@@ -1259,6 +1264,7 @@ Interpreter.prototype.createFunction = function(node, opt_scope) {
   var func = this.createObject(this.FUNCTION);
   func.parentScope = opt_scope || this.getScope();
   func.node = node;
+  func.callCount = 0;
   this.setProperty(func, 'length',
                    this.createPrimitive(func.node.params.length), true);
   return func;
@@ -1452,9 +1458,11 @@ Interpreter.prototype.getScope = function() {
  * @param {Object} parentScope Scope to link to.
  * @return {!Object} New scope.
  */
-Interpreter.prototype.createScope = function(node, parentScope) {
+Interpreter.prototype.createScope = function(node, parentScope, scopeName) {
   var scope = this.createObject(null);
+  scope.scopeName = scopeName;
   scope.parentScope = parentScope;
+  scope.scopeOrder = this.scopeOrder++;
   if (!parentScope) {
     this.initGlobalScope(scope);
   }
@@ -1837,8 +1845,10 @@ Interpreter.prototype['stepCallExpression'] = function() {
         state.func_ = state.member_;
       }
       if (state.func_.node) {
+        var scopeCount = state.func_.callCount++;
+        var scopeName = node.callee.type === 'Identifier' ? "#"+node.callee.name+"# "+scopeCount : "#Anonynmous# "+scopeCount;
         var scope =
-            this.createScope(state.func_.node.body, state.func_.parentScope);
+            this.createScope(state.func_.node.body, state.func_.parentScope, scopeName);
         // Add all arguments.
         for (var i = 0; i < state.func_.node.params.length; i++) {
           var paramName = this.createPrimitive(state.func_.node.params[i].name);
@@ -2377,8 +2387,132 @@ Interpreter.prototype['stepVariableDeclarator'] = function() {
 Interpreter.prototype['stepWhileStatement'] =
     Interpreter.prototype['stepDoWhileStatement'];
 
+Interpreter.prototype.visualizeScope = function() {
+  if(this.stateStack.length > 0) {
+    var theStack = this.findScopes(this.stateStack);
+    return this.flattenScopeStack(theStack);
+  }
+}
+
+Interpreter.prototype.findScopes = function findScopes(stateStack) {
+    return stateStack.filter((x) => x.scope != undefined).map((x) => x.scope);
+}
+
+Interpreter.prototype.flattenScopeStack = function(scopeList) {
+    
+    var flat_scope = this.extractScopeValues(scopeList[0]);
+    for(var i = 1; i < scopeList.length; i++) {
+      var higherScope = this.extractScopeValues(scopeList[i]);
+      higherScope.child_scopes.push(flat_scope);
+      flat_scope = higherScope;
+    }
+    return flat_scope;
+}
+
+Interpreter.prototype.extractScopeValues = function extractScopeValues(scope) {
+  var result = {
+    name: scope.scopeName,
+    order: scope.scopeOrder,
+    properties : {
+
+    },
+    closures: [],
+    child_scopes: []
+  };
+  var global = window || global || {};
+  var globalProps = {window: true, self: true};//todo: avoid circular references in window and self
+  var closures = new Set([null, scope]);
+
+  for(var prop in scope.properties) {
+    if(!(prop in global) && !(prop in globalProps)) {
+      result.properties[prop] = this.extract(scope.properties[prop]);
+
+      if(scope.properties[prop].type == 'function' && scope.properties[prop].parentScope !== scope) {
+        var parentScope = scope.properties[prop].parentScope;
+        if(!closures.has(parentScope)) {
+          closures.add(parentScope);
+          var scopes_to_process = [parentScope];
+
+          parentScope = parentScope.parentScope;
+          while(!closures.has(parentScope)) {
+            closures.add(parentScope);
+            scopes_to_process.push(parentScope);
+          }
+
+          var rec_closures = this.flattenScopeStack(scopes_to_process);
+          result.closures.push(rec_closures);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+//make a function that extract that filters to primitives, people and attackers
+
+Interpreter.prototype.extract = function extract(node) {
+  if(node.isPrimitive) {
+    return this.extractPrimitive(node);
+  }else if(node.parent === this.ARRAY) {
+    return this.extractArray(node);
+  }else if(node.parent === this.OBJECT) {
+    return this.extractObject(node);
+  }else if(node.parent === this.REGEXP) {
+    return this.extractPrimitive(node);
+  }else if(node.type === 'function') {
+    return this.extractFunction(node);
+  }else if(node.type === 'object' && node.parent.type === 'function') {
+    return this.extractClassObject(node);
+  }
+}
+
+Interpreter.prototype.extractFunction = function extractFunction(node) {
+    console.log(node.node);
+  return {
+    type: 'function',
+    funcText: escodegen.generate(node.node),
+    createdIn: node.parentScope.scopeName
+  }
+}
+
+Interpreter.prototype.extractPrimitive = function extractPrimitive(node) {
+  return node.data;
+}
+
+Interpreter.prototype.extractArray = function extractArray(node) {
+  var result = [];
+  for(var index in node.properties) {
+    result[index] = this.extract(node.properties[index]);
+  };
+  return result;
+}
+
+Interpreter.prototype.extractClassObject =  function extractClassObject(node) {
+  var result = {
+      type: 'object',
+      constructor: node.parent.node.id.name, properties: {}};
+  for(var prop in node.properties) {
+    result.properties[prop] = this.extract(node.properties[prop]);
+  }
+  return result;
+}
+
+Interpreter.prototype.extractObject = function extractObject(node) {
+  var result = {
+      type: 'object',
+      constructor: 'object', properties: {}};
+  for(var prop in node.properties) {
+    result.properties[prop] = this.extract(node.properties[prop]);
+  }
+  return result;
+}
 // Preserve top-level API functions from being pruned by JS compilers.
 // Add others as needed.
+var window = window || {};
 window['Interpreter'] = Interpreter;
+var module = module || {};
+module.exports = {
+    Interpreter
+}
 Interpreter.prototype['step'] = Interpreter.prototype.step;
 Interpreter.prototype['run'] = Interpreter.prototype.run;
