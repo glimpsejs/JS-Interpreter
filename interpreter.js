@@ -32,7 +32,7 @@
  * @constructor
  */
 var acorn = require('./acorn.js');
-var escodegen = require('escodegen');
+var escodegen = require('./escodegen.browser.js');
 var Interpreter = function(code, opt_initFunc) {
   this.initFunc_ = opt_initFunc;
   this.UNDEFINED = this.createPrimitive(undefined);
