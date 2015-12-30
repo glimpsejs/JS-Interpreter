@@ -31,8 +31,8 @@
  *     global scope object.
  * @constructor
  */
-//var acorn = require('./acorn.js');
-//var escodegen = require('escodegen');
+var acorn = require('./acorn.js');
+var escodegen = require('escodegen');
 var Interpreter = function(code, opt_initFunc) {
   this.initFunc_ = opt_initFunc;
   this.UNDEFINED = this.createPrimitive(undefined);
@@ -2506,11 +2506,11 @@ Interpreter.prototype.extractObject = function extractObject(node) {
   }
   return result;
 }
+Interpreter.prototype['step'] = Interpreter.prototype.step;
+Interpreter.prototype['run'] = Interpreter.prototype.run;
 // Preserve top-level API functions from being pruned by JS compilers.
 // Add others as needed.
 var window = window || {};
 window['Interpreter'] = Interpreter;
 var module = module || {};
 module.exports = Interpreter;
-Interpreter.prototype['step'] = Interpreter.prototype.step;
-Interpreter.prototype['run'] = Interpreter.prototype.run;
