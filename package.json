@@ -1,0 +1,19 @@
+{
+  "name": "jsinterpeter",
+  "version": "1.0.0",
+  "description": "JS-Interpreter ==============",
+  "main": "interpreter.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glimpsejs/JS-Interpreter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/glimpsejs/JS-Interpreter/issues"
+  },
+  "homepage": "https://github.com/glimpsejs/JS-Interpreter#readme"
+}
