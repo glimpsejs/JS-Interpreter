@@ -32,7 +32,7 @@
  * @constructor
  */
 var acorn = require('./acorn.js');
-var escodegen = require('./escodegen.browser.js');
+var escodegen = require('./escodegen.browser.js').escodegen;
 var Interpreter = function(code, opt_initFunc) {
   this.initFunc_ = opt_initFunc;
   this.UNDEFINED = this.createPrimitive(undefined);
@@ -2467,7 +2467,7 @@ Interpreter.prototype.extract = function extract(node) {
 }
 
 Interpreter.prototype.extractFunction = function extractFunction(node) {
-    console.log(node.node);
+	console.log('==== node ====', node.node);
   return {
     type: 'function',
     funcText: escodegen.generate(node.node),
