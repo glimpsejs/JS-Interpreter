@@ -1,5 +1,5 @@
 {
-  "name": "jsinterpeter",
+  "name": "jsinterpreter",
   "version": "1.0.0",
   "description": "JS-Interpreter ==============",
   "main": "interpreter.js",
