@@ -2511,8 +2511,6 @@ Interpreter.prototype.extractObject = function extractObject(node) {
 var window = window || {};
 window['Interpreter'] = Interpreter;
 var module = module || {};
-module.exports = {
-    Interpreter
-}
+module.exports = Interpreter;
 Interpreter.prototype['step'] = Interpreter.prototype.step;
 Interpreter.prototype['run'] = Interpreter.prototype.run;
