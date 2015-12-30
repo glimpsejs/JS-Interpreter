@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/glimpsejs/JS-Interpreter/issues"
   },
-  "homepage": "https://github.com/glimpsejs/JS-Interpreter#readme"
+  "homepage": "https://github.com/glimpsejs/JS-Interpreter#readme",
+  "dependencies": {
+    "escodegen": "^1.7.1"
+  }
 }
