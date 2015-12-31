@@ -2453,8 +2453,6 @@ Interpreter.prototype['stepThrowStatement'] = function() {
         //cut out nodes between 0 to j and j to j+1 and j+1 upto j+n
         var position = 0;
         var count = 0;
-        //console.log("+++ FINALLYS +++", finallys_todo);
-        //console.log("START", this.stateStack);
         for(var j = 0; j < finallys_todo.length; j++) {
             while(this.stateStack[position] !== finallys_todo[j] && count < this.stateStack.length) {
                 count++;
@@ -2464,7 +2462,20 @@ Interpreter.prototype['stepThrowStatement'] = function() {
         }
 
         this.stateStack.splice(finallys_todo.length-1, 0, {node: handler});
-        //console.log("END", this.stateStack);
+    }else if(finallys_todo.length > 0) {
+        this.stateStack.shift()
+
+        //cut out nodes between 0 to j and j to j+1 and j+1 upto j+n
+        var position = 0;
+        var count = 0;
+        for(var j = 0; j < finallys_todo.length; j++) {
+            while(this.stateStack[position] !== finallys_todo[j] && count < this.stateStack.length) {
+                count++;
+                this.stateStack.splice(position,1);
+            }
+            position++;
+        }
+        this.stateStack.splice(finallys_todo.length, 0, state);
     }else{
         throw new Error("Uncaught exception")
     }

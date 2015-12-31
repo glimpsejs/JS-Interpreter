@@ -174,10 +174,41 @@ describe("try/catch/finally", () => {
             if(test.stateStack.length > 0) {
                 state = test.stateStack[0];
             }
-            count ++;
+            count++;
         }
         }).to.throw(Error);
         var results = test.extractScopeValues(test.getScope());
         expect(results.properties.c.properties.output).to.deep.equal(['inner','oops','finally']);
     });
+
+    it("It should not leave undone finally statements for uncaught exceptions", () => {
+        var test_code = '\
+        function test() {\
+            try {\
+                c.log("try");\
+                throw "oops";\
+                c.log("shouldn\'t be here");\
+            } finally {\
+                c.log("finally");\
+            }\
+            c.log("got here?");\
+            return 4;\
+        }\
+        var hmm = test();';
+
+        var test = new Interpreter(setup_code + test_code);
+        var state = null;
+        var count = 0;
+        expect(() => {
+        while(test.step()) {
+            //console.log(count , test.stateStack[0]);
+            if(test.stateStack.length > 0) {
+                state = test.stateStack[0];
+            }
+            count++;
+        }
+        }).to.throw(Error);
+        var results = test.extractScopeValues(test.stateStack[test.stateStack.length-1].scope);
+        expect(results.properties.c.properties.output).to.deep.equal(['try','finally']);
+    })
 })
