@@ -212,3 +212,64 @@ describe("try/catch/finally", () => {
         expect(results.properties.c.properties.output).to.deep.equal(['try','finally']);
     })
 })
+
+describe('return', () => {
+    it("Should return a simple value", () => {
+        var test_code = '\
+        function id(x) {\
+            return x;\
+        }\
+        c.log(id(10));';
+        var results = getOutput(test_code);
+        expect(results).to.deep.equal([10]);
+    });
+
+    it("Should return early", () => {
+        var test_code = '\
+        function test(bool) {\
+            if(bool) {\
+                c.log(bool);\
+                return bool;\
+                c.log("nope");\
+            }else{\
+                c.log("negative");\
+                return bool;\
+            }\
+        }\
+        c.log(test(true));';
+        var results = getOutput(test_code);
+        expect(results).to.deep.equal([true, true]);
+    });
+
+    it("Should respect finally", () => {
+        var test_code = '\
+        function example() {\
+            try {\
+                return true;\
+            }\
+            finally {\
+                return false;\
+            }\
+        }\
+        c.log(example());';
+        var results = getOutput(test_code);
+        expect(results).to.deep.equal([false]);
+    });
+
+
+    it("Should respect catch and finally", () => {
+        var test_code = '\
+        function example() {\
+            try {\
+                throw "oops";\
+            } catch (e) {\
+                return e;\
+            } finally {\
+                return false;\
+            }\
+        }\
+        c.log(example());';
+        var results = getOutput(test_code);
+        expect(results).to.deep.equal([false]);
+    });
+});

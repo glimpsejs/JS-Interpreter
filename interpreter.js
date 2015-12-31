@@ -2218,6 +2218,8 @@ Interpreter.prototype['stepReturnStatement'] = function() {
       if(state.node.type == 'CatchClause') {
           this.stateStack.splice(position, 1, state.node.thrower);
           position++;
+      }else if(state.node.type === 'TryStatement' && state.node.finalizer && !state.done) {
+          position++;
       }else{
           this.stateStack.splice(position, 1);
       }
