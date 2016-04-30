@@ -273,7 +273,21 @@ describe('return', () => {
         expect(results).to.deep.equal([false]);
     });
 
-    it("should handle the scopes created by catch", () => {
+    it("Should handle continue statements", () => {
+        var test_code = '\
+            for(var i = 0; i < 2; i++) {\
+                try {\
+                    c.log(i);\
+                    continue;\
+                } finally {\
+                    c.log("end");\
+                }\
+            }';
+        var results = getOutput(test_code);
+        expect(results).to.deep.equal([0,'end', 1, 'end'])
+    })
+
+    xit("should handle the scopes created by catch", () => {
         var test_code = 'function capturedFoo() {return foo};\
         foo = "prior to throw";\
         try {\

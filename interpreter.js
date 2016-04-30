@@ -1948,14 +1948,25 @@ Interpreter.prototype['stepContinueStatement'] = function() {
     label = node.label.name;
   }
   var state = this.stateStack[0];
+  var position = 0;
   while (state && state.node.type != 'callExpression') {
     if (state.isLoop) {
       if (!label || (label == state.label)) {
         return;
       }
     }
-    this.stateStack.shift();
-    state = this.stateStack[0];
+
+    if(state.node.type == 'CatchClause') {
+        // if an unhandled exception is on the stack when returning, rethrow
+        this.stateStack.splice(position, 1, state.node.thrower);
+        position++;
+    }else if(state.node.type === 'TryStatement' && state.node.finalizer && !state.done) {
+        //before returning finish finally blocks
+        position++;
+    }else{
+        this.stateStack.splice(position, 1);
+    }
+    state = this.stateStack[position];
   }
   throw new SyntaxError('Illegal continue statement');
 };
