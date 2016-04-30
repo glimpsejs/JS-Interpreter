@@ -2216,9 +2216,11 @@ Interpreter.prototype['stepReturnStatement'] = function() {
     do {
       //console.log("RETURN START",this.stateStack);
       if(state.node.type == 'CatchClause') {
+          // if an unhandled exception is on the stack when returning, rethrow
           this.stateStack.splice(position, 1, state.node.thrower);
           position++;
       }else if(state.node.type === 'TryStatement' && state.node.finalizer && !state.done) {
+          //before returning finish finally blocks
           position++;
       }else{
           this.stateStack.splice(position, 1);

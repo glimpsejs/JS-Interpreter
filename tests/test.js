@@ -272,4 +272,26 @@ describe('return', () => {
         var results = getOutput(test_code);
         expect(results).to.deep.equal([false]);
     });
+
+    it("should handle the scopes created by catch", () => {
+        var test_code = 'function capturedFoo() {return foo};\
+        foo = "prior to throw";\
+        try {\
+            throw "Error";\
+        }\
+        catch (foo) {\
+            var foo = "initializer in catch";\
+        }';
+
+        var test = new Interpreter(setup_code + test_code);
+        var state = null;
+        while(test.step()) {
+            //console.log(count , test.stateStack[0]);
+            if(test.stateStack.length > 0) {
+                state = test.stateStack[0];
+            }
+        }
+        var results = test.extractScopeValues(state.scope);
+        expect(results.properties.foo).to.equal('prior to throw');
+    })
 });
