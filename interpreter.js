@@ -1491,6 +1491,26 @@ Interpreter.prototype.createScope = function(node, parentScope, scopeName) {
 };
 
 /**
+ * Create a new special scope dictionary. Similar to createScope(), but
+ * doesn't assume that the scope is for a function body. This is used for
+ * the catch clause and with statement.
+ * @param {!Object} parentScope Scope to link to.
+ * @param {Object=} opt_scope Optional object to transform into scope.
+ * @return {!Object} New scope.
+ */
+Interpreter.prototype.createSpecialScope = function(parentScope, opt_scope) {
+  if (!parentScope) {
+    throw 'parentScope required';
+  }
+  var scope = opt_scope || this.createObject(null);
+  scope.parentScope = parentScope;
+  scope.strict = parentScope.strict;
+  return scope;
+};
+
+
+
+/**
  * Retrieves a value from the scope chain.
  * @param {!Object} name Name of variable.
  * @throws {string} Error if identifier does not exist.
@@ -2458,10 +2478,8 @@ Interpreter.prototype['stepThrowStatement'] = function() {
         }
     }
     if(try_statement) {
-        var exception_scope = this.createScope({}, this.getScope(), "Exception Scope");
         var handler = try_statement.handler;
         handler.parameter = state.value;
-        handler.scope = exception_scope;
         handler.thrower = state;
         this.stateStack.shift()
 
@@ -2500,9 +2518,15 @@ Interpreter.prototype['stepThrowStatement'] = function() {
 Interpreter.prototype['stepCatchClause'] = function() {
     var state = this.stateStack[0];
     if(!state.done) {
-        this.setValueToScope(state.node.param.name, state.node.parameter);
         state.done = true;
-        this.stateStack.unshift({node:state.node.body});
+        var scope;
+        if (state.node.param) {
+            scope = this.createSpecialScope(this.getScope());
+            // Add the argument.
+            var paramName = this.createPrimitive(state.node.param.name);
+            this.setProperty(scope, paramName, state.node.parameter);
+        }
+        this.stateStack.unshift({node:state.node.body, scope: scope});
     }else{
         this.stateStack.shift();
     }

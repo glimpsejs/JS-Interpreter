@@ -72,11 +72,12 @@ describe("try/catch/finally", () => {
                 c.log("tried again");\
             } catch (e) {\
                 c.log("caught");\
+                c.log(e);\
             } finally {\
                 c.log("finally");\
             }';
         var results = getOutput(test_code);
-        expect(results).to.deep.equal(["tried","caught","finally"]);
+        expect(results).to.deep.equal(["tried","caught",false,"finally"]);
     });
 
     it("Should handle the exception in the outer try catch exception, and finish inner finally", () => {
@@ -287,7 +288,7 @@ describe('return', () => {
         expect(results).to.deep.equal([0,'end', 1, 'end'])
     })
 
-    xit("should handle the scopes created by catch", () => {
+    it("should handle the scopes created by catch", () => {
         var test_code = 'function capturedFoo() {return foo};\
         foo = "prior to throw";\
         try {\
